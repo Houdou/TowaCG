@@ -87,9 +87,9 @@ export class IntroComponent implements OnInit, AfterViewInit {
 		this.tsm = new TowaCG.TowaScene(this.scene);
 
 		let g = new TowaCG.Container();
-		for(let i = 0; i < 10; i++) {
-			let mat = new THREE.PointsMaterial({size: 1, sizeAttenuation: false, color: TowaCG.Random.OnHSL(-1, 0.75, 0.7, 0.6, 0.8)});
-			let d = new TowaCG.Dot(TowaCG.Random.OnSphereSurface(new THREE.Vector3(60 + i * i * 10, 60 + i * i * 10, 60 + i * i * 10), 1000 + i * 1000), mat);
+		for(let i = 4; i < 5; i++) {
+			let mat = new THREE.LineBasicMaterial({color: TowaCG.Random.OnHSL(-1, 0.75, 0.7, 0.6, 0.8)});
+			let d = new TowaCG.Line(TowaCG.Random.OnSphereSurface(new THREE.Vector3(60 + i * i * 10, 60 + i * i * 10, 60 + i * i * 10), 10 + i * 10), mat, false);
 			g.AddElement(d);
 		}
 		g.UseUpdateFunc((e, dt, args) => {

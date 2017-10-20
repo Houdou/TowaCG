@@ -33,8 +33,13 @@
 	right: 3%;
 	z-index: 9999;
 	width: 10%;
-	min-width: 120px;
+	/*min-width: 120px;*/
 	opacity: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-flow: column;
 
 	transition: opacity 2s ease;
 }

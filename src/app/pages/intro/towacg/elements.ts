@@ -35,11 +35,32 @@ export class Line extends AnimatedElement {
 	public geometry: THREE.Geometry;
 	public obj: THREE.Line;
 
-	constructor(pos: Array<THREE.Vector3>, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial, updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+	constructor(pos: Array<THREE.Vector3>, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial,
+			public isCountinuous: boolean = true,
+			updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
 		super(updateFunc);
 		this.geometry = new THREE.Geometry();
+		if(pos.length % 2 != 0) {
+			console.warn("The line must have even vertices");
+			pos.push(pos[pos.length - 1]); // Duplicate the last one
+		}
 		this.geometry.vertices.push(...pos);
-		this.obj = new THREE.Line(this.geometry, this.material);
+		if(isCountinuous)
+			this.obj = new THREE.Line(this.geometry, this.material);
+		else
+			this.obj = new THREE.LineSegments(this.geometry, this.material);
+	}
+}
+
+export class Box extends AnimatedElement {
+	public geometry: THREE.Geometry;
+	public obj: THREE.Line;
+
+	constructor(pos: Array<THREE.Vector3>, size: number, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial,
+			updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+		super(updateFunc);
+		this.geometry = new THREE.Geometry();
+
 	}
 }
 
