@@ -39,12 +39,13 @@ export class IntroComponent implements OnInit, AfterViewInit {
 		let canvasDiv: HTMLDivElement = this.canvasHolder.nativeElement
 
 		this.scene = new THREE.Scene();
-		this.camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 3000);
+		this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
 		this.camera.position.z = 1000;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.setClearColor(0x101010);
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
 		this.renderer.setPixelRatio(window.devicePixelRatio);
+		// this.renderer.sortObjects = false;
 
 		canvasDiv.appendChild(this.renderer.domElement);
 
@@ -69,41 +70,65 @@ export class IntroComponent implements OnInit, AfterViewInit {
 	}
 
 	public initScene(): void {
-		// var i, line, vertex1, vertex2, material, p, parameters = [ [ 0.25, 0xFFAAAA, 1, 2 ], [ 0.5, 0xff9900, 1, 1 ], [ 0.75, 0xffaa00, 0.75, 1 ], [ 1, 0xffaa00, 0.5, 1 ], [ 1.25, 0x0088FF, 0.8, 1 ], [ 3.0, 0xaaaaaa, 0.75, 2 ], [ 3.5, 0xffffff, 0.5, 1 ], [ 4.5, 0xffffff, 0.25, 1 ], [ 5.5, 0xffffff, 0.125, 1 ] ];
-
-		// let g = this.createGeometry();
-
-		// for(i = 0; i < parameters.length; i++) {
-		// 	p = parameters[i];
-
-		// 	material = new THREE.LineBasicMaterial( { color: p[ 1 ], opacity: p[ 2 ], linewidth: p[ 3 ] } );
-
-		// 	line = new TowaIntroLine( g, material, p[ 0 ]);
-		// 	line.scale.x = line.scale.y = line.scale.z = p[ 0 ];
-		// 	line.rotation.y = Math.random() * Math.PI;
-		// 	line.updateMatrix();
-		// 	this.scene.add( line );
-		// }
 		this.tsm = new TowaCG.TowaScene(this.scene);
 
 		let g = new TowaCG.Container();
-		let mat = new THREE.LineBasicMaterial({color: 0xFFAAAA});
-		let grid = new TowaCG.Grid({cellSizeX: 20, cellSizeY: 20}, mat);
-		g.AddElement(grid);
-		g.UseUpdateFunc((e, dt, args) => {
-			e.obj.rotation.y += dt * args.currentSpdY;
-			e.obj.rotation.x += dt * args.currentSpdX;
-			args.currentSpdY = TowaCG.Lerp.Number(args.currentSpdY, args.spdY, dt * 0.5);
-			args.currentSpdX = TowaCG.Lerp.Number(args.currentSpdX, args.spdX, dt * 0.1);
-			args.time += dt;
-			e.obj.scale.x = (0.1 * Math.sin(args.time) + 1);
-			e.obj.scale.y = (0.1 * Math.sin(args.time) + 1);
-			e.obj.scale.z = (0.1 * Math.sin(args.time) + 1);
-		}, {currentSpdY: 0, currentSpdX: 0, spdY: 0, spdX: 0, time: 0});
-		setInterval(() => {
-			g.updateArgs.spdY = Math.random() * 2 - 0.6;
-			g.updateArgs.spdX = Math.random() * 4 - 2;
-		}, 1000);
+		let gridMat = new THREE.LineBasicMaterial({color: 0xAABCE0, linewidth: 1});
+		let grid = new TowaCG.Grid({cellSizeX: 36, cellSizeY: 20, cellHeight: 100, cellWidth: 100}, gridMat);
+		
+		let fillGroup = new TowaCG.Container();		
+		for(let j = -8; j < 8; j++) {
+			for(let i = -12; i < 18; i++) {
+				// if(Math.random() > 0.6) continue;
+				let fillMat = new THREE.MeshBasicMaterial({color: TowaCG.Random.OnHSL(0.58, 0.7, 0.5), opacity: 0, transparent: true});
+				let f = new TowaCG.Fill({width: 99.5, height: 99.5, pos: grid.GetGridPos(i, j)}, fillMat);
+				f.UseUpdateFunc((fill, deltaTime, args) => {
+					fillMat.opacity = TowaCG.Lerp.Number(fillMat.opacity, args.toOpacity, deltaTime * 0.8);
+					args.delay += deltaTime;
+					if(args.delay >= args.updateInterval) {
+						args.delay -= args.updateInterval;
+						if(Math.random() > 0.6)
+							args.toOpacity = Math.random() * Math.random() * 0.65 + 0.15;
+					}
+				}, {toOpacity: Math.random() * Math.random() * 0.65 + 0.15, updateInterval: 2.0, delay: Math.random() * 2.0});
+				fillGroup.AddElement(f);
+			}
+		}
+
+		let nodeGroup = new TowaCG.Container();
+		for(let j = -8; j < 8; j++) {
+			for(let i = -12; i < 18; i++) {
+				if(Math.random() > 0.6) continue;
+				let nodeBgMat = new THREE.MeshBasicMaterial({color: 0x202020});
+				let dBg = new TowaCG.Fill({width: 10, height: 10, pos: grid.GetGridPos(i, j, true).add(new THREE.Vector3(0, 0, 0.5))}, nodeBgMat);
+				dBg.obj.renderOrder = 1;
+				let nodeMat = new THREE.MeshBasicMaterial({color: 0xFAFAFF});
+				let d = new TowaCG.Fill({width: 6, height: 6, pos: grid.GetGridPos(i, j, true).add(new THREE.Vector3(0, 0, 1.5))}, nodeMat);
+				d.obj.renderOrder = 2;
+				
+				nodeGroup.AddElement(dBg);
+				nodeGroup.AddElement(d);
+			}
+		}
+		g.AddElement(fillGroup);
+		g.AddElement(grid);		
+		g.AddElement(nodeGroup);
+
+		g.obj.rotation.y = 0.12;
+		// g.UseUpdateFunc((e, dt, args) => {
+		// 	e.obj.rotation.y += dt * args.currentSpdY;
+		// 	e.obj.rotation.x += dt * args.currentSpdX;
+		// 	args.currentSpdY = TowaCG.Lerp.Number(args.currentSpdY, args.spdY, dt * 0.5);
+		// 	args.currentSpdX = TowaCG.Lerp.Number(args.currentSpdX, args.spdX, dt * 0.1);
+		// 	args.time += dt;
+		// 	e.obj.scale.x = (0.1 * Math.sin(args.time) + 1);
+		// 	e.obj.scale.y = (0.1 * Math.sin(args.time) + 1);
+		// 	e.obj.scale.z = (0.1 * Math.sin(args.time) + 1);
+		// }, {currentSpdY: 0, currentSpdX: 0, spdY: 0, spdX: 0, time: 0});
+		// setInterval(() => {
+		// 	g.updateArgs.spdY = Math.random() * 2 - 0.6;
+		// 	g.updateArgs.spdX = Math.random() * 4 - 2;
+		// }, 1000);
 		this.tsm.AddElement(g);
 	}
 

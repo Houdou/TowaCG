@@ -29,20 +29,34 @@ export class Container extends AnimatedElement {
 		this.obj = new THREE.Group();
 	}
 
+	public update(deltaTime: number): void {
+		this.children.forEach(e => {
+			e.update(deltaTime);
+		});
+		super.update(deltaTime);
+	}
+
 	public AddElement(e: AnimatedElement) {
 		this.children.push(e);
 		this.obj.add(e.obj);
 	}
 }
 
+export interface DotParameter {
+	dots?: Array<THREE.Vector3>
+}
+
 export class Dot extends AnimatedElement {
 	public geometry: THREE.Geometry;
 	public obj: THREE.Points;
 
-	constructor(pos: Array<THREE.Vector3>, public material: THREE.PointsMaterial, updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+	constructor(public param: DotParameter, public material: THREE.PointsMaterial, updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
 		super(updateFunc);
+		//Default parameter
+		param.dots = param.dots || new Array<THREE.Vector3>();
+
 		this.geometry = new THREE.Geometry();
-		this.geometry.vertices.push(...pos);
+		this.geometry.vertices.push(...param.dots);
 		this.obj = new THREE.Points(this.geometry, this.material);
 	}
 }
@@ -53,7 +67,7 @@ export class Line extends AnimatedElement {
 
 	constructor(pos: Array<THREE.Vector3>, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial,
 			public isCountinuous: boolean = true,
-			updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+			updateFunc: (line: AnimatedElement, t: number, args?: any) => any = null) {
 		super(updateFunc);
 		this.geometry = new THREE.Geometry();
 		if(!isCountinuous && pos.length % 2 != 0) {
@@ -73,16 +87,35 @@ export class Box extends AnimatedElement {
 	public obj: THREE.Line;
 
 	constructor(pos: Array<THREE.Vector3>, size: number, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial,
-			updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+			updateFunc: (box: AnimatedElement, t: number, args?: any) => any = null) {
 		super(updateFunc);
 		this.geometry = new THREE.Geometry();
 
 	}
 }
 
-export class Fill {
-	constructor() {
+export interface FillParameter {
+	pos?: THREE.Vector3;
+	width?: number;
+	height?: number;
+	widthSegment?: number;
+	heightSegment?: number;
+}
 
+export class Fill extends AnimatedElement {
+	public geometry: THREE.Geometry;
+
+	constructor(public param: FillParameter, public material: THREE.Material, updateFunc: (fill: AnimatedElement, t: number, args?: any) => any = null) {
+		super(updateFunc);
+		param.width = param.width || 10;
+		param.height = param.height || 10;
+		param.widthSegment = param.widthSegment || 1;
+		param.heightSegment = param.heightSegment || 1;
+		param.pos = param.pos || new THREE.Vector3(-param.width / 2, -param.height / 2, 0);
+
+		this.geometry = new THREE.PlaneGeometry(param.width, param.height, param.widthSegment, param.heightSegment);
+		this.obj = new THREE.Mesh(this.geometry, this.material);
+		this.obj.position.add(param.pos);
 	}
 
 }
@@ -95,7 +128,7 @@ export class Text {
 }
 
 export class GridNode extends Container {
-	constructor(updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+	constructor(updateFunc: (node: AnimatedElement, t: number, args?: any) => any = null) {
 		super(updateFunc);
 		// Add a dot
 		// Add a box
@@ -112,9 +145,9 @@ export interface GridParameter {
 }
 
 export class Grid extends Container {
-	constructor(param: GridParameter, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial, updateFunc: (dot: AnimatedElement, t: number, args?: any) => any = null) {
+	constructor(public param: GridParameter, public material: THREE.LineBasicMaterial | THREE.LineDashedMaterial, updateFunc: (grid: AnimatedElement, t: number, args?: any) => any = null) {
 		super(updateFunc);
-		//
+		// Default parameter:
 		param.cellSizeX = param.cellSizeX || 10;
 		param.cellSizeY = param.cellSizeY || 10;
 		param.cellHeight = param.cellHeight || 100;
@@ -137,6 +170,13 @@ export class Grid extends Container {
 			this.AddElement(l);
 		}
 		this.obj.position.add(param.pos);
+	}
+
+	public GetGridPos(x: number, y: number, onLine: boolean = false): THREE.Vector3 {
+		if(onLine)
+			return new THREE.Vector3(x * this.param.cellWidth, y * this.param.cellHeight);
+		else
+			return new THREE.Vector3((x - 0.5) * this.param.cellWidth, (y - 0.5) * this.param.cellHeight);
 	}
 }
 
